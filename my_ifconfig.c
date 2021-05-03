@@ -17,7 +17,7 @@ FILE *fp2,*fp;
 short int  total_interfaces ,pos,i=0;
 
 fp=popen("ls /sys/class/net","r");
-fp2= popen("ls /sys/class/net | wc -l","r") ;
+fp2= popen("ls /sys/class/net | wc -l","r");
 
 if (fp==NULL)
  perror("couldnt get interface names--->");
