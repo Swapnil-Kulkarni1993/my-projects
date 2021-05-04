@@ -34,9 +34,9 @@ if (fp==NULL)
  printf("content from the fread is ---->\n%s\ninterfaces=%d\n",path, total_interfaces);
  
 
- //print_info (ifr, total_interfaces);
+ print_info (ifr, total_interfaces, argc);
  
- Get_interface_names (ifr, total_interfaces);
+ //Get_interface_names (ifr, total_interfaces);
 
 
 
@@ -44,7 +44,7 @@ if (fp==NULL)
 }
 
 /*
-void Get_info (struct ifreq *ifr)
+void Get_info (struct ifreq *ifr, int fd, int argc)
 {
 
 if (ioctl(fd, SIOCGIFHWADDR, &ifr)<0)
@@ -55,25 +55,22 @@ if (ioctl(fd, SIOCGIFHWADDR, &ifr)<0)
 
 
 }
-
-void print_info (struct ifreq *ifr, short int total_interfaces)
+ */
+ 
+ void print_info (struct ifreq *ifr, short int total_interfaces, int argc)
 {
+	int fd;
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+ 
+   if (fd < 0)
+   perror("couldnt open socket--->");
+   
   Get_interface_names(ifr, total_interfaces);
+  
+  Get_info (ifr, fd, argc);
   
 
 }
-
-void open_socket ()
-{
-
- int fd;
- fd = socket(AF_INET, SOCK_DGRAM, 0);
- 
- if (fd <0)
- perror("couldnt open socket--->");
- 
- }
- */
  
  void Get_interface_names(struct ifreq *ifr, short int total_interfaces)
  {
