@@ -7,8 +7,8 @@
 
 
  void Get_all_interfaces_info(struct ifreq *ifr, short int total_interfaces);
- void Print_info (struct ifreq *ifr, int fd, int argc, char *argv[], int total_interfaces);
- void Get_info (struct ifreq *ifr, short int total_interfaces, int argc, char *argv[]);
+ short int Print_info (struct ifreq *ifr, int fd, int argc, char *argv[], int total_interfaces);
+ short int Get_info (struct ifreq *ifr, short int total_interfaces, int argc, char *argv[]);
 
 char path[100], interfaces;
 
@@ -43,13 +43,14 @@ if (fp==NULL)
  
  //Get_interface_names (ifr, total_interfaces);
 
+pclose (fp);
+pclose (fp2);
 
-
-	
+	return 0;
 }
 
 
-void Print_info (struct ifreq *ifr, int fd, int argc, char *argv[], int total_interfaces)
+short int Print_info (struct ifreq *ifr, int fd, int argc, char *argv[], int total_interfaces)
 {
 
  if (argc<=1)
@@ -57,12 +58,20 @@ void Print_info (struct ifreq *ifr, int fd, int argc, char *argv[], int total_in
    for (--total_interfaces; total_interfaces >= 0; --total_interfaces)
    {
        if (ioctl(fd, SIOCGIFHWADDR, &ifr[total_interfaces])<0)
-          perror("couldnt get hardware address-->");
+       {
+          perror("EXITING the program...!!!couldnt get hardware address-->");
+          return 1;
+       }
  
        if (ioctl(fd, SIOCGIFMTU, &ifr[total_interfaces])<0)
-          perror("couldnt get MTU--->");
-          
-       printf("mtu of %s=%d\n", ifr[total_interfaces].ifr_name, ifr[total_interfaces].ifr_mtu);
+       {          
+          perror("EXITING the program...!!!couldnt get MTU--->");
+          return 1;
+       }  
+        
+       printf("mtu of %s=%d\t hwdaddrs=%X:%X:%X:%x:%x:%x\n",ifr[total_interfaces].ifr_name,ifr[total_interfaces].ifr_mtu,
+       ifr[total_interfaces].ifr_hwaddr.sa_data[0],ifr[total_interfaces].ifr_hwaddr.sa_data[1],ifr[total_interfaces].ifr_hwaddr.sa_data[2],
+       ifr[total_interfaces].ifr_hwaddr.sa_data[3],ifr[total_interfaces].ifr_hwaddr.sa_data[4],ifr[total_interfaces].ifr_hwaddr.sa_data[5]);
    } 
  
  }
@@ -72,32 +81,43 @@ void Print_info (struct ifreq *ifr, int fd, int argc, char *argv[], int total_in
  	strncpy(ifr[total_interfaces].ifr_name,  argv[1], sizeof(argv[1]));
  	
  	if (ioctl(fd, SIOCGIFHWADDR, &ifr[total_interfaces])<0)
-      perror("couldnt get hardware address-->");
- 
+ 	{
+      perror("EXITING the program...!!!couldnt get hardware address-->");
+      return 1;
+   }
    if (ioctl(fd, SIOCGIFMTU, &ifr[total_interfaces])<0)
-      perror("couldnt get MTU--->");
+   {   
+      perror("EXITING the program...!!!couldnt get MTU--->");
+      return 1;
+   }   
       
-      
-   printf("mtu of %s=%d\n", ifr[total_interfaces].ifr_name, ifr[total_interfaces].ifr_mtu);
+   printf("mtu of %s=%d\t hwdaddrs=%.2X:%.2X:%X:%x:%x:%x\n",ifr[total_interfaces].ifr_name,ifr[total_interfaces].ifr_mtu,
+   ifr[total_interfaces].ifr_hwaddr.sa_data[0],ifr[total_interfaces].ifr_hwaddr.sa_data[1],ifr[total_interfaces].ifr_hwaddr.sa_data[2],
+   ifr[total_interfaces].ifr_hwaddr.sa_data[3],ifr[total_interfaces].ifr_hwaddr.sa_data[4],ifr[total_interfaces].ifr_hwaddr.sa_data[5]);
 }
 
 }
  
  
- void Get_info (struct ifreq *ifr, short int total_interfaces, int argc, char *argv[])
+ short int Get_info (struct ifreq *ifr, short int total_interfaces, int argc, char *argv[])
 {
 	int fd;
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
  
    if (fd < 0)
-   perror("couldnt open socket--->");
-   
+   {
+     perror("EXITING the program...!!!couldnt open socket--->");
+     return 1;  
+   }
     
-     Get_all_interfaces_info (ifr, total_interfaces);
+   Get_all_interfaces_info (ifr, total_interfaces);
   
-     Print_info(ifr, fd, argc, argv, total_interfaces);
-
-  
+   if(Print_info(ifr, fd, argc, argv, total_interfaces))
+   {
+     return 1;
+   }
+     
+   close(fd);
 
 }
  
