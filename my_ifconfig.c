@@ -7,7 +7,7 @@
 
 
  void Get_all_interfaces_names(struct ifreq *ifr, short int total_interfaces);
- short int Print_info (struct ifreq *ifr, int fd, int argc, char *argv[], int total_interfaces);
+ short int Print_info (struct ifreq *ifr, int argc, char *argv[], int total_interfaces);
  short int Get_info (struct ifreq *ifr, short int total_interfaces, int argc, char *argv[]);
 
 char path[100], interfaces;
@@ -38,6 +38,7 @@ int main(int argc, char *argv[])
 	 
 	
 	 Get_info (ifr, total_interfaces, argc, argv);
+	 Print_info(ifr, argc, argv, total_interfaces);
 	 
 	 //Get_interface_names (ifr, total_interfaces);
 	
@@ -60,21 +61,7 @@ short int Get_info (struct ifreq *ifr, short int total_interfaces, int argc, cha
    }
     
    Get_all_interfaces_names(ifr, total_interfaces);
-  
-   if(Print_info(ifr, fd, argc, argv, total_interfaces))
-   {
-     return 1;
-   }
-     
-   close(fd);
-
-}
-
-short int Print_info (struct ifreq *ifr, int fd, int argc, char *argv[], int total_interfaces)
-{
- 
- if (argc<=1)
- {
+   
    for (--total_interfaces; total_interfaces >= 0; --total_interfaces)
    {
        if (ioctl(fd, SIOCGIFHWADDR, &ifr[total_interfaces])<0)
@@ -88,31 +75,41 @@ short int Print_info (struct ifreq *ifr, int fd, int argc, char *argv[], int tot
           perror("EXITING the program...!!!couldnt get MTU\t");
           return 1;
        }  
+     /*   
+       printf("mtu of %s=%d\t hwdaddrs=%02X:%02X:%02X:%02x:%02x:%02x\n",ifr[total_interfaces].ifr_name,ifr[total_interfaces].ifr_mtu,
+       ifr[total_interfaces].ifr_hwaddr.sa_data[0],ifr[total_interfaces].ifr_hwaddr.sa_data[1],ifr[total_interfaces].ifr_hwaddr.sa_data[2],
+       (unsigned char)ifr[total_interfaces].ifr_hwaddr.sa_data[3],ifr[total_interfaces].ifr_hwaddr.sa_data[4],ifr[total_interfaces].ifr_hwaddr.sa_data[5]);
+     */
+   }
+     
+   close(fd);
+
+}
+
+short int Print_info (struct ifreq *ifr, int argc, char *argv[], int total_interfaces)
+{
+ 
+ if (argc<=1)
+ {
+   for (--total_interfaces; total_interfaces >= 0; --total_interfaces)
+   {
         
        printf("mtu of %s=%d\t hwdaddrs=%02X:%02X:%02X:%02x:%02x:%02x\n",ifr[total_interfaces].ifr_name,ifr[total_interfaces].ifr_mtu,
        ifr[total_interfaces].ifr_hwaddr.sa_data[0],ifr[total_interfaces].ifr_hwaddr.sa_data[1],ifr[total_interfaces].ifr_hwaddr.sa_data[2],
        (unsigned char)ifr[total_interfaces].ifr_hwaddr.sa_data[3],ifr[total_interfaces].ifr_hwaddr.sa_data[4],ifr[total_interfaces].ifr_hwaddr.sa_data[5]);
-      
    } 
- 
-   
  }
+ 
  else 
  {
- 	total_interfaces=0;
- 	strncpy(ifr[total_interfaces].ifr_name,  argv[1], sizeof(argv[1]));
  	
- 	if (ioctl(fd, SIOCGIFHWADDR, &ifr[total_interfaces])<0)
- 	{
-      perror("EXITING the program...!!!couldnt get hardware address\t");
-      return 1;
+   //while(ifr[--total_interfaces].ifr_name != argv[1])  
+   while (strcmp(ifr[--total_interfaces].ifr_name, argv[1]))
+   {     
+      //printf("name=%s, argv[1]=%s\n",ifr[total_interfaces].ifr_name, argv[1]);
+      continue;
    }
-   if (ioctl(fd, SIOCGIFMTU, &ifr[total_interfaces])<0)
-   {   
-      perror("EXITING the program...!!!couldnt get MTU\t");
-      return 1;
-   }   
-      
+   
    printf("mtu of %s=%d\t hwdaddrs=%.2X:%.2X:%X:%x:%x:%x\n",ifr[total_interfaces].ifr_name,ifr[total_interfaces].ifr_mtu,
    ifr[total_interfaces].ifr_hwaddr.sa_data[0],ifr[total_interfaces].ifr_hwaddr.sa_data[1],ifr[total_interfaces].ifr_hwaddr.sa_data[2],
    (unsigned char)ifr[total_interfaces].ifr_hwaddr.sa_data[3],ifr[total_interfaces].ifr_hwaddr.sa_data[4],ifr[total_interfaces].ifr_hwaddr.sa_data[5]);
