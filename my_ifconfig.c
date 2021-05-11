@@ -15,23 +15,28 @@ char path[100], interfaces;
 
 int main(int argc, char *argv[])
 {
-	FILE *fp2,*fp;
+	FILE *fp,*fp2;
 	 
 	short int  total_interfaces ,pos,i=0;
 	
-	fp=popen("ls /sys/class/net","r");
-	fp2= popen("ls /sys/class/net | wc -l","r");
+	fp=popen("ls /sys/class/net","r"); //to get names of the network interfaces present in the system
 	
 	if (fp==NULL)
-	 perror("couldnt get interface names\t");
+	 perror("couldnt get interface names\t");   
 	 
-	 if (fp2==NULL)
+	fread(path,sizeof(char),100,fp);   
+	
+	
+	fp2= popen("ls /sys/class/net | wc -l","r");  //to get total count of the network interfaces present in the system 
+	 
+	if (fp2==NULL)
 	 perror("couldnt get total interface count\t");
 	
+	fread(&interfaces,sizeof(char),1,fp2);
+	
 	 
-	 fread(path,sizeof(char),100,fp);
-	 fread(&interfaces,sizeof(char),1,fp2);
-	 total_interfaces= interfaces - 48;
+	 total_interfaces= interfaces - 48; // converting char to int
+	 	 
 	 struct ifreq ifr[total_interfaces];
 	
 	 //printf("content from the fread is ---->\n%s\ninterfaces=%d\n",path, total_interfaces);
@@ -60,13 +65,15 @@ short int Get_info (struct ifreq *ifr, short int total_interfaces, int argc, cha
      return 1;  
    }
     
+   total_interfaces=total_interfaces-1;
    Get_all_interfaces_names(ifr, total_interfaces);
    
-   for (--total_interfaces; total_interfaces >= 0; --total_interfaces)
+   for (total_interfaces; total_interfaces >= 0; --total_interfaces)
    {
        if (ioctl(fd, SIOCGIFHWADDR, &ifr[total_interfaces])<0)
        {
           perror("EXITING the program...!!!couldnt get hardware address\t");
+          printf("--->%s\n", ifr[total_interfaces].ifr_name);
           return 1;
        }
  
@@ -94,9 +101,9 @@ short int Print_info (struct ifreq *ifr, int argc, char *argv[], int total_inter
    for (--total_interfaces; total_interfaces >= 0; --total_interfaces)
    {
         
-       printf("mtu of %s=%d\t hwdaddrs=%02X:%02X:%02X:%02x:%02x:%02x\n",ifr[total_interfaces].ifr_name,ifr[total_interfaces].ifr_mtu,
-       ifr[total_interfaces].ifr_hwaddr.sa_data[0],ifr[total_interfaces].ifr_hwaddr.sa_data[1],ifr[total_interfaces].ifr_hwaddr.sa_data[2],
-       (unsigned char)ifr[total_interfaces].ifr_hwaddr.sa_data[3],ifr[total_interfaces].ifr_hwaddr.sa_data[4],ifr[total_interfaces].ifr_hwaddr.sa_data[5]);
+    printf("mtu of %s=%d\t hwdaddrs=%02X:%02X:%02X:%02x:%02x:%02x\n",ifr[total_interfaces].ifr_name,ifr[total_interfaces].ifr_mtu,
+    (unsigned char)ifr[total_interfaces].ifr_hwaddr.sa_data[0], (unsigned char)ifr[total_interfaces].ifr_hwaddr.sa_data[1], (unsigned char)ifr[total_interfaces].ifr_hwaddr.sa_data[2],
+    (unsigned char)ifr[total_interfaces].ifr_hwaddr.sa_data[3], (unsigned char)ifr[total_interfaces].ifr_hwaddr.sa_data[4], (unsigned char)ifr[total_interfaces].ifr_hwaddr.sa_data[5]);
    } 
  }
  
@@ -110,10 +117,10 @@ short int Print_info (struct ifreq *ifr, int argc, char *argv[], int total_inter
       continue;
    }
    
-   printf("mtu of %s=%d\t hwdaddrs=%.2X:%.2X:%X:%x:%x:%x\n",ifr[total_interfaces].ifr_name,ifr[total_interfaces].ifr_mtu,
-   ifr[total_interfaces].ifr_hwaddr.sa_data[0],ifr[total_interfaces].ifr_hwaddr.sa_data[1],ifr[total_interfaces].ifr_hwaddr.sa_data[2],
-   (unsigned char)ifr[total_interfaces].ifr_hwaddr.sa_data[3],ifr[total_interfaces].ifr_hwaddr.sa_data[4],ifr[total_interfaces].ifr_hwaddr.sa_data[5]);
-}
+   printf("mtu of %s=%d\t hwdaddrs=%02X:%02X:%02X:%02x:%02x:%02x\n",ifr[total_interfaces].ifr_name,ifr[total_interfaces].ifr_mtu,
+    (unsigned char)ifr[total_interfaces].ifr_hwaddr.sa_data[0], (unsigned char)ifr[total_interfaces].ifr_hwaddr.sa_data[1], (unsigned char)ifr[total_interfaces].ifr_hwaddr.sa_data[2],
+    (unsigned char)ifr[total_interfaces].ifr_hwaddr.sa_data[3], (unsigned char)ifr[total_interfaces].ifr_hwaddr.sa_data[4], (unsigned char)ifr[total_interfaces].ifr_hwaddr.sa_data[5]);
+   }
 
 }
  
@@ -123,7 +130,7 @@ short int Print_info (struct ifreq *ifr, int argc, char *argv[], int total_inter
  void Get_all_interfaces_names(struct ifreq *ifr, short int total_interfaces)
  {
  	short int i=0;
- 	for (--total_interfaces; total_interfaces >= 0; --total_interfaces)
+ 	for (total_interfaces; total_interfaces >= 0; --total_interfaces)
 	{ 
 	 short int pos=0;
 	  while(path[i] != '\n')
