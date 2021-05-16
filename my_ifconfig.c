@@ -24,7 +24,7 @@ static int get_info(unsigned char *port_name);
 
 int main(int argc, char *argv[])
 {
- 	unsigned char port_name [IFNAMSIZ];
+ 	unsigned char port_name[IFNAMSIZ];
  	int retval;
  
  	if(argc > 1) {  strncpy(port_name, argv[1], IFNAMSIZ); }
@@ -52,8 +52,7 @@ int main(int argc, char *argv[])
 	 
 	fread(interface_names, sizeof(char), 100, fp);  
 	if(ferror(fp)) { printf("Error in reading interface names..!!!\n"); pclose(fp); return 1; }
-	
-	
+
 	fp2 = popen("ls /sys/class/net | wc -l", "r");  //to get total count of the network interfaces present in the system 
 	if(fp2 == NULL) { perror("couldnt get total interface count\t"); pclose(fp); pclose(fp2); return 1; }
 	
@@ -61,7 +60,7 @@ int main(int argc, char *argv[])
 	if(ferror(fp2)) { printf("Error in getting total interface count..!!!\n"); pclose(fp); pclose(fp2); return 1; }
 
    count = interface_count - 48; // converting char to int
-   struct interfaces ifc [count]; struct ifreq ifr[count];
+   struct interfaces ifc[count]; struct ifreq ifr[count];
    count = count-1; //as array index starts from 0
 
 	fd = socket(AF_INET, SOCK_DGRAM, 0); if(fd < 0) { perror("EXITING the program..!!couldnt open socket\t"); goterr=1; goto _close; }
@@ -79,7 +78,7 @@ int main(int argc, char *argv[])
 	   																         goterr=1;  goto _close; }
 			memcpy(ifc[count].hwaddr, ifr[count].ifr_hwaddr.sa_data, MAC_SIZE);   		
 	   		
-	   	if (ioctl(fd, SIOCGIFMTU, &ifr[count])<0) { perror("EXITING the program..!!couldnt get MTU\t");  goterr=1; goto _close; }  
+	   	if (ioctl(fd, SIOCGIFMTU, &ifr[count])<0) { perror("EXITING the program..!!couldnt get MTU\t"); goterr=1; goto _close; }  
 	   	ifc[count].mtu=ifr[count].ifr_mtu;   
 	   }
    } 
@@ -92,7 +91,7 @@ int main(int argc, char *argv[])
    																         goterr=1; goto _close; }
 		memcpy(ifc[count].hwaddr, ifr[count].ifr_hwaddr.sa_data, MAC_SIZE);   		
 	   		
-	   if(ioctl(fd, SIOCGIFMTU, &ifr[count])<0) { perror("EXITING the program..!!couldnt get MTU\t");  goterr=1; goto _close; }  
+	   if(ioctl(fd, SIOCGIFMTU, &ifr[count])<0) { perror("EXITING the program..!!couldnt get MTU\t"); goterr=1; goto _close; }  
 	   ifc[count].mtu=ifr[count].ifr_mtu;
    }
    
@@ -112,12 +111,14 @@ _close:
 
 static void print_info(struct interfaces *ifc, unsigned char *port_name, int count)
 {
-   count = count-1;
+	count = count-1;
+   printf("\tNAME\t\tMTU\t\tHWADDR\n\n");   
+   
    if(!(strcmp(port_name, "no_port")))
    {	
      for(count; count >= 0; count--)
      {   
-        printf("mtu of %s=%d\t hwdaddrs=%02X:%02X:%02X:%02x:%02x:%02x\n",ifc[count].name,ifc[count].mtu,
+        printf("\t%s\t\t%d\t\t%02X:%02X:%02X:%02x:%02x:%02x\n",ifc[count].name, ifc[count].mtu,
         ifc[count].hwaddr[0], ifc[count].hwaddr[1], ifc[count].hwaddr[2],
         ifc[count].hwaddr[3], ifc[count].hwaddr[4], ifc[count].hwaddr[5]);
      } 
@@ -127,7 +128,7 @@ static void print_info(struct interfaces *ifc, unsigned char *port_name, int cou
  	   count = 0;
       strncpy(ifc[count].name, port_name, IFNAMSIZ);
    
-      printf("mtu of %s=%d\t hwdaddrs=%02X:%02X:%02X:%02x:%02x:%02x\n",ifc[count].name,ifc[count].mtu,
+      printf("\t%s\t\t%d\t\t%02X:%02X:%02X:%02x:%02x:%02x\n",ifc[count].name, ifc[count].mtu,
       ifc[count].hwaddr[0], ifc[count].hwaddr[1], ifc[count].hwaddr[2],
       ifc[count].hwaddr[3], ifc[count].hwaddr[4], ifc[count].hwaddr[5]);
    }
