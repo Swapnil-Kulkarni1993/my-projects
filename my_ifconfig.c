@@ -18,8 +18,9 @@ int mtu;
 };
 
 static void get_all_interfaces_names(struct interfaces *ifc, short int count, unsigned char *interface_names);
+static int get_all_interfaces_info(struct interfaces *ifc, struct ifreq *ifr, unsigned char *port_name, int count, int fd);
 static void print_info(struct interfaces *ifc, unsigned char *port_name, int count);
-static int get_info(unsigned char *port_name);
+static int interface_info(unsigned char *port_name);
 
 
 int main(int argc, char *argv[])
@@ -30,7 +31,7 @@ int main(int argc, char *argv[])
  	if(argc > 1) {  strncpy(port_name, argv[1], IFNAMSIZ); }
  	else { strncpy(port_name, "no_port", IFNAMSIZ); }
 
- 	retval = get_info(port_name);
+ 	retval = interface_info(port_name);
  	
  	if(retval) { printf("EXITING main() function....!!!!!!\n"); exit(EXIT_FAILURE); }
  	
@@ -39,10 +40,10 @@ int main(int argc, char *argv[])
 
 /**************************************************************************************************************/
 
- static int get_info(unsigned char *port_name)
+ static int interface_info(unsigned char *port_name)
 {
 	
- 	int fd, i=0, count, goterr=0;
+ 	int fd, count, goterr=0, retval=0;
 	unsigned char interface_count, interface_names[100];
 	FILE *fp, *fp2;
 	
@@ -66,34 +67,10 @@ int main(int argc, char *argv[])
 	fd = socket(AF_INET, SOCK_DGRAM, 0); if(fd < 0) { perror("EXITING the program..!!couldnt open socket\t"); goterr=1; goto _close; }
    
    get_all_interfaces_names(ifc, count, interface_names);
-    
-
-   if(!(strcmp(port_name, "no_port")))
-   {
-	   for(count; count >= 0; count--)
-	   {
-	   	strncpy(ifr[count].ifr_name, ifc[count].name, IFNAMSIZ);
-	   	 
-	   	if(ioctl(fd, SIOCGIFHWADDR, &ifr[count])<0) { perror("EXITING the program..!!couldnt get hardware address\t");
-	   																         goterr=1;  goto _close; }
-			memcpy(ifc[count].hwaddr, ifr[count].ifr_hwaddr.sa_data, MAC_SIZE);   		
-	   		
-	   	if (ioctl(fd, SIOCGIFMTU, &ifr[count])<0) { perror("EXITING the program..!!couldnt get MTU\t"); goterr=1; goto _close; }  
-	   	ifc[count].mtu=ifr[count].ifr_mtu;   
-	   }
-   } 
-   else 
-   {
-   	count = 0;
-   	strncpy(ifr[count].ifr_name, port_name, IFNAMSIZ);
    
-   	if(ioctl(fd, SIOCGIFHWADDR, &ifr[count])<0) { perror("EXITING the program..!!couldnt get hardware address\t"); 
-   																         goterr=1; goto _close; }
-		memcpy(ifc[count].hwaddr, ifr[count].ifr_hwaddr.sa_data, MAC_SIZE);   		
-	   		
-	   if(ioctl(fd, SIOCGIFMTU, &ifr[count])<0) { perror("EXITING the program..!!couldnt get MTU\t"); goterr=1; goto _close; }  
-	   ifc[count].mtu=ifr[count].ifr_mtu;
-   }
+   retval = get_all_interfaces_info(ifc, ifr, port_name, interface_count-48, fd);
+   
+   if(retval) { printf("Error in getting interface info...!!!\n"); goterr=1; goto _close; }
    
    print_info(ifc, port_name, interface_count-48);
    
@@ -108,30 +85,46 @@ _close:
 }
 
 /**************************************************************************************************************/
+ 
+ static int get_all_interfaces_info(struct interfaces *ifc, struct ifreq *ifr, unsigned char *port_name, int count, int fd)
+ {
+ 	 int result;
+ 	 count = count-1;
+    result = strcmp(port_name, "no_port");
+	 if(result != 0) { count = 0; strncpy(ifc[count].name, port_name, IFNAMSIZ); }
+	
+	 for(count; count >= 0; count--)
+	 {
+	    strncpy(ifr[count].ifr_name, ifc[count].name, IFNAMSIZ);
+	   	 
+	    if(ioctl(fd, SIOCGIFHWADDR, &ifr[count])<0) { perror("EXITING the program..!!couldnt get hardware address\t"); return 1; }
+		 memcpy(ifc[count].hwaddr, ifr[count].ifr_hwaddr.sa_data, MAC_SIZE);   		
+	   		
+	    if (ioctl(fd, SIOCGIFMTU, &ifr[count])<0) { perror("EXITING the program..!!couldnt get MTU\t"); return 1; }  
+	    ifc[count].mtu=ifr[count].ifr_mtu;   
+	 }
+    
+    return 0;
+ }
+
+/**************************************************************************************************************/
 
 static void print_info(struct interfaces *ifc, unsigned char *port_name, int count)
 {
-	count = count-1;
-   printf("\tNAME\t\tMTU\t\tHWADDR\n\n");   
+   int result;	
    
-   if(!(strcmp(port_name, "no_port")))
-   {	
+	count = count-1;
+	result = strcmp(port_name, "no_port");
+	if(result != 0) { count = 0; strncpy(ifc[count].name, port_name, IFNAMSIZ); }
+
+   printf("\tNAME\t\tMTU\t\tHWADDR\n\n");   
+  
      for(count; count >= 0; count--)
      {   
         printf("\t%s\t\t%d\t\t%02X:%02X:%02X:%02x:%02x:%02x\n",ifc[count].name, ifc[count].mtu,
-        ifc[count].hwaddr[0], ifc[count].hwaddr[1], ifc[count].hwaddr[2],
-        ifc[count].hwaddr[3], ifc[count].hwaddr[4], ifc[count].hwaddr[5]);
+              ifc[count].hwaddr[0], ifc[count].hwaddr[1], ifc[count].hwaddr[2],
+              ifc[count].hwaddr[3], ifc[count].hwaddr[4], ifc[count].hwaddr[5]);
      } 
-   }
-   else 
-   {
- 	   count = 0;
-      strncpy(ifc[count].name, port_name, IFNAMSIZ);
-   
-      printf("\t%s\t\t%d\t\t%02X:%02X:%02X:%02x:%02x:%02x\n",ifc[count].name, ifc[count].mtu,
-      ifc[count].hwaddr[0], ifc[count].hwaddr[1], ifc[count].hwaddr[2],
-      ifc[count].hwaddr[3], ifc[count].hwaddr[4], ifc[count].hwaddr[5]);
-   }
 
 }
  
